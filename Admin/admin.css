@@ -1,0 +1,254 @@
+/* Reset and base styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Segoe UI", sans-serif;
+}
+
+body {
+  background-color: #f7f9fc;
+  color: #333;
+  line-height: 1.6;
+  padding: 20px;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+/* Header */
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(135deg, #005792, #007bb5);
+  color: white;
+  padding: 15px 25px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+header h1 {
+  font-size: 1.6rem;
+}
+
+.header-actions {
+  display: flex;
+  gap: 10px;
+}
+
+/* Buttons */
+button {
+  background: linear-gradient(135deg, #ffaa00, #ffcc33);
+  color: #222;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.3s ease;
+  box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+}
+
+button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+}
+
+/* Form section */
+.form-section {
+  background-color: #fff;
+  padding: 20px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.form-section h2 {
+  margin-bottom: 15px;
+  color: #005792;
+}
+
+form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 15px;
+}
+
+form input,
+form select {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 1rem;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+form input:focus,
+form select:focus {
+  border-color: #005792;
+  box-shadow: 0 0 6px rgba(0, 87, 146, 0.3);
+}
+
+form button {
+  grid-column: span 2;
+  background: linear-gradient(135deg, #005792, #007bb5);
+  color: #fff;
+}
+
+/* Table section (now used as drill-down container) */
+.table-section {
+  background-color: #fff;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.table-section h2 {
+  margin-bottom: 10px;
+  color: #005792;
+}
+
+/* Drill-down buttons */
+.button-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 15px 0;
+}
+
+.button-container button {
+  background: linear-gradient(135deg, #005792, #007bb5);
+  color: #fff;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.3s ease;
+}
+
+.button-container button:hover {
+  background: linear-gradient(135deg, #007bb5, #005792);
+}
+
+/* Resident cards */
+.resident-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 15px;
+}
+
+.resident-card {
+  background: #fff;
+  padding: 12px;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  line-height: 1.4;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.resident-card strong {
+  font-size: 1.1rem;
+  color: #005792;
+}
+
+/* Resident card actions */
+.resident-actions {
+  margin-top: 8px;
+  display: flex;
+  gap: 8px;
+}
+
+.resident-actions button {
+  padding: 6px 10px;
+  font-size: 0.9rem;
+  border-radius: 6px;
+  background: #ffaa00;
+  color: #000;
+}
+
+.resident-actions button:hover {
+  background: #ffcc33;
+}
+
+/* Dark mode */
+.dark-mode {
+  background-color: #121212;
+  color: #f0f0f0;
+}
+
+.dark-mode header {
+  background: linear-gradient(135deg, #1e1e1e, #333);
+}
+
+.dark-mode .form-section,
+.dark-mode .table-section {
+  background-color: #1f1f1f;
+  box-shadow: none;
+}
+
+.dark-mode input,
+.dark-mode select {
+  background-color: #2b2b2b;
+  color: white;
+  border: 1px solid #444;
+}
+
+.dark-mode input:focus,
+.dark-mode select:focus {
+  border-color: #ff9800;
+  box-shadow: 0 0 6px rgba(255, 152, 0, 0.3);
+}
+
+.dark-mode button {
+  background: linear-gradient(135deg, #ff9800, #ffc107);
+  color: #000;
+}
+
+.dark-mode button:hover {
+  background: linear-gradient(135deg, #ffc107, #ff9800);
+}
+
+.dark-mode .resident-card {
+  background: #1f1f1f;
+  color: #f0f0f0;
+}
+
+.dark-mode .resident-actions button {
+  background: linear-gradient(135deg, #ff9800, #ffc107);
+  color: #000;
+}
+
+.dark-mode .resident-actions button:hover {
+  background: linear-gradient(135deg, #ffc107, #ff9800);
+}
+
+/* Modal overlay - hidden by default */
+.modal {
+  display: none;               /* hide modal initially */
+  position: fixed;             /* fix overlay to viewport */
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5); /* semi-transparent background */
+  justify-content: center;     /* center modal content horizontally */
+  align-items: center;         /* center modal content vertically */
+  z-index: 1000;               /* appear on top of everything */
+}
+
+/* Modal inner content box */
+.modal-content {
+  background-color: #fff;
+  padding: 20px;
+  border-radius: 12px;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+/* Dark mode modal */
+.dark-mode .modal-content {
+  background-color: #1f1f1f;
+  color: #f0f0f0;
+  box-shadow: 0 8px 24px rgba(255, 152, 0, 0.4);
+}

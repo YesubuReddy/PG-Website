@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin - SEVEN SKY PG FOR GENTS</title>
+  <link rel="stylesheet" href="admin.css" />
+</head>
+<body>
+
+<header>
+  <h1>SEVEN SKY PG Admin Panel</h1>
+  <div class="header-actions">
+    <button onclick="toggleDarkMode()">🌙 Toggle Dark Mode</button>
+  </div>
+</header>
+
+<main>
+  <!-- Form -->
+  <section class="form-section">
+    <h2>Register New Resident</h2>
+    <form id="registerForm">
+      <input type="text" id="name" placeholder="Full Name" required />
+      <input type="text" id="roomNumber" placeholder="Room Number" required />
+      <select id="roomType" required>
+        <option value="">Select Room Type</option>
+        <option value="Single Sharing">Single Sharing</option>
+        <option value="Double Sharing">Double Sharing</option>
+        <option value="Triple Sharing">Triple Sharing</option>
+        <option value="Four Sharing">Four Sharing</option>
+      </select>
+      <input type="tel" id="phone" placeholder="Phone Number" required />
+      <input type="tel" id="altPhone" placeholder="Alternate Phone Number" />
+      <input type="text" id="aadhar" placeholder="Aadhaar Number" pattern="\d{12}" maxlength="12" required />
+      <input type="date" id="joinDate" required />
+      <input type="number" id="amountPaid" placeholder="Amount Paid" required />
+      <input type="date" id="dueDate" required />
+      <button type="submit">Register</button>
+    </form>
+  </section>
+
+  <!-- Drill-down View -->
+  <section class="table-section">
+    <h2>Browse Residents</h2>
+    <div id="step1" class="button-container"></div>
+    <div id="step2"></div>
+    <div id="step3" class="resident-list"></div>
+  </section>
+
+  <!-- NEW SECTION: Residents with Due Date within 2 Days -->
+  <section class="due-soon-section" style="margin-top: 40px;">
+    <h2>Residents Due Within 2 Days</h2>
+    <table id="dueSoonTable" style="width:100%; max-width:900px; border-collapse: collapse;">
+      <thead>
+        <tr style="background:#005792; color:white;">
+          <th style="padding:10px; text-align:left;">Name</th>
+          <th style="padding:10px; text-align:left;">Room Number</th>
+          <th style="padding:10px; text-align:left;">Room Type</th>
+          <th style="padding:10px; text-align:left;">Due Date</th>
+          <th style="padding:10px; text-align:left;">Phone</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </section>
+</main>
+
+<!-- Edit Resident Modal -->
+<div id="editModal" class="modal">
+  <div class="modal-content">
+    <h2>Edit Resident</h2>
+    <form id="editForm">
+      <input type="hidden" id="editId" />
+      <input type="text" id="editName" placeholder="Full Name" required />
+      <input type="text" id="editRoomNumber" placeholder="Room Number" required />
+      <select id="editRoomType" required>
+        <option value="Single Sharing">Single Sharing</option>
+        <option value="Double Sharing">Double Sharing</option>
+        <option value="Triple Sharing">Triple Sharing</option>
+        <option value="Four Sharing">Four Sharing</option>
+      </select>
+      <input type="tel" id="editPhone" placeholder="Phone Number" required />
+      <input type="tel" id="editAltPhone" placeholder="Alternate Phone Number" />
+      <input type="text" id="editAadhar" placeholder="Aadhaar Number" pattern="\d{12}" maxlength="12" required />
+      <input type="date" id="editJoinDate" required />
+      <input type="number" id="editAmountPaid" placeholder="Amount Paid" required />
+      <input type="date" id="editDueDate" required />
+      <div class="modal-actions">
+        <button type="submit">Save Changes</button>
+        <button type="button" onclick="closeModal('editModal')">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div id="deleteModal" class="modal">
+  <div class="modal-content">
+    <h2>Confirm Delete</h2>
+    <p>Are you sure you want to delete this resident?</p>
+    <div class="modal-actions">
+      <button id="confirmDeleteBtn">Yes, Delete</button>
+      <button type="button" onclick="closeModal('deleteModal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const step1 = document.getElementById('step1');
+  const step2 = document.getElementById('step2');
+  const step3 = document.getElementById('step3');
+  const form = document.getElementById('registerForm');
+  let deleteTargetId = null;
+
+  function toggleDarkMode() {
+    document.body.classList.toggle('dark-mode');
+  }
+
+  function openModal(id) {
+    document.getElementById(id).style.display = 'flex';
+  }
+
+  function closeModal(id) {
+    document.getElementById(id).style.display = 'none';
+  }
+
+  // Step 1
+  function loadRoomTypes() {
+    fetch("http://127.0.0.1:5000/api/room_types")
+      .then(res => res.json())
+      .then(types => {
+        step1.innerHTML = "<h3>Select Room Type:</h3>";
+        types.forEach(type => {
+          const btn = document.createElement('button');
+          btn.textContent = type;
+          btn.onclick = () => loadRooms(type);
+          step1.appendChild(btn);
+        });
+        loadResidentsDueSoon();  // Load due soon residents whenever room types load/refreshed
+      });
+  }
+
+  // Step 2 with search
+  function loadRooms(roomType) {
+    step2.innerHTML = `
+      <h3>Select Room Number:</h3>
+      <div style="display:flex; gap:8px; margin-bottom:10px;">
+        <input type="text" id="roomSearchInput" placeholder="Search room number..." style="flex:1; padding:8px; border:1px solid #aaa; border-radius:6px;">
+        <button id="clearSearchBtn" style="padding:8px 12px; background:#ccc; border-radius:6px;">Clear</button>
+      </div>
+      <div id="roomButtons" class="button-container"></div>
+    `;
+    step3.innerHTML = "";
+
+    fetch(`http://127.0.0.1:5000/api/rooms/${encodeURIComponent(roomType)}`)
+      .then(res => res.json())
+      .then(rooms => {
+        const container = document.getElementById("roomButtons");
+
+        function renderRooms(filter = "") {
+          container.innerHTML = "";
+          rooms
+            .filter(room => room.toLowerCase().includes(filter.toLowerCase()))
+            .forEach(room => {
+              const btn = document.createElement("button");
+              btn.textContent = room;
+              btn.onclick = () => loadResidents(room);
+              container.appendChild(btn);
+            });
+        }
+
+        renderRooms();
+
+        document.getElementById("roomSearchInput").addEventListener("input", e => {
+          renderRooms(e.target.value);
+        });
+
+        document.getElementById("clearSearchBtn").addEventListener("click", () => {
+          document.getElementById("roomSearchInput").value = "";
+          renderRooms();
+        });
+      });
+  }
+
+  // Step 3
+  function loadResidents(roomNumber) {
+    step3.innerHTML = "<h3>Residents:</h3>";
+    fetch(`http://127.0.0.1:5000/api/residents_by_room/${encodeURIComponent(roomNumber)}`)
+      .then(res => res.json())
+      .then(residents => {
+        if (residents.length === 0) {
+          step3.innerHTML += "<p>No residents found.</p>";
+          return;
+        }
+        residents.forEach(r => {
+          const card = document.createElement('div');
+          card.className = "resident-card";
+          card.innerHTML = `
+            <div class="resident-info">
+              <strong>${r.name}</strong> (${r.room_type})<br>
+              Phone: ${r.phone}<br>
+              Alt: ${r.alt_phone || '-'}<br>
+              Aadhaar: ${r.aadhar}<br>
+              Joined: ${r.join_date}<br>
+              Paid: ₹${r.amount_paid}<br>
+              Due: ${r.due_date}
+            </div>
+            <div class="resident-actions">
+              <button onclick="openEditModal(${r.id}, '${r.name}', '${r.room_number}', '${r.room_type}', '${r.phone}', '${r.alt_phone || ''}', '${r.aadhar}', '${r.join_date}', ${r.amount_paid}, '${r.due_date}')">✏️</button>
+              <button onclick="openDeleteModal(${r.id})">🗑️</button>
+            </div>
+          `;
+          step3.appendChild(card);
+        });
+      });
+  }
+
+  // Open Edit Modal
+  function openEditModal(id, name, roomNumber, roomType, phone, altPhone, aadhar, joinDate, amountPaid, dueDate) {
+    document.getElementById("editId").value = id;
+    document.getElementById("editName").value = name;
+    document.getElementById("editRoomNumber").value = roomNumber;
+    document.getElementById("editRoomType").value = roomType;
+    document.getElementById("editPhone").value = phone;
+    document.getElementById("editAltPhone").value = altPhone;
+    document.getElementById("editAadhar").value = aadhar;
+    document.getElementById("editJoinDate").value = joinDate;
+    document.getElementById("editAmountPaid").value = amountPaid;
+    document.getElementById("editDueDate").value = dueDate;
+    openModal("editModal");
+  }
+
+  // Save Edit
+  document.getElementById("editForm").addEventListener("submit", function(e) {
+    e.preventDefault();
+    const id = document.getElementById("editId").value;
+    const updatedResident = {
+      name: document.getElementById("editName").value,
+      room_number: document.getElementById("editRoomNumber").value,
+      room_type: document.getElementById("editRoomType").value,
+      phone: document.getElementById("editPhone").value,
+      alt_phone: document.getElementById("editAltPhone").value,
+      aadhar: document.getElementById("editAadhar").value,
+      join_date: document.getElementById("editJoinDate").value,
+      amount_paid: parseFloat(document.getElementById("editAmountPaid").value),
+      due_date: document.getElementById("editDueDate").value
+    };
+    fetch(`http://127.0.0.1:5000/api/residents/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updatedResident)
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.status === 'success') {
+          closeModal("editModal");
+          loadRoomTypes();
+        }
+      });
+  });
+
+  // Open Delete Modal
+  function openDeleteModal(id) {
+    deleteTargetId = id;
+    openModal("deleteModal");
+  }
+
+  document.getElementById("confirmDeleteBtn").addEventListener("click", function() {
+    if (!deleteTargetId) return;
+    fetch(`http://127.0.0.1:5000/api/residents/${deleteTargetId}`, {
+      method: "DELETE"
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.status === 'success') {
+        closeModal("deleteModal");
+        loadRoomTypes();
+        deleteTargetId = null;
+      }
+    });
+  });
+
+  // Register new resident
+  form.addEventListener("submit", function(e) {
+    e.preventDefault();
+    const newResident = {
+      name: form.name.value,
+      room_number: form.roomNumber.value,
+      room_type: form.roomType.value,
+      phone: form.phone.value,
+      alt_phone: form.altPhone.value,
+      aadhar: form.aadhar.value,
+      join_date: form.joinDate.value,
+      amount_paid: parseFloat(form.amountPaid.value),
+      due_date: form.dueDate.value
+    };
+    fetch("http://127.0.0.1:5000/api/residents", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newResident)
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.status === 'success') {
+          form.reset();
+          loadRoomTypes();
+        }
+      });
+  });
+
+  // Load residents due within 2 days
+  function loadResidentsDueSoon() {
+    fetch("http://127.0.0.1:5000/api/residents_due_soon")
+      .then(res => res.json())
+      .then(residents => {
+        const tbody = document.querySelector("#dueSoonTable tbody");
+        tbody.innerHTML = "";
+        residents.forEach(r => {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td style="padding:8px;">${r.name}</td>
+            <td style="padding:8px;">${r.room_number}</td>
+            <td style="padding:8px;">${r.room_type}</td>
+            <td style="padding:8px;">${r.due_date}</td>
+            <td style="padding:8px;">${r.phone}</td>
+          `;
+          tbody.appendChild(row);
+        });
+      });
+  }
+
+  // Initial load
+  loadRoomTypes();
+</script>
+
+</body>
+</html>
